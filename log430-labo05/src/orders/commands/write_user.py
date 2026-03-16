@@ -9,7 +9,7 @@ from orders.commands.user_event_producer import UserEventProducer
 from orders.models.user import User
 from db import get_sqlalchemy_session
 
-def add_user(name: str, email: str):
+def add_user(name: str, email: str, user_type_id: int = 1):
     """Insert user with items in MySQL"""
     if not name or not email:
         raise ValueError("Cannot create user. A user must have name and email.")
@@ -17,7 +17,7 @@ def add_user(name: str, email: str):
     session = get_sqlalchemy_session()
 
     try: 
-        new_user = User(name=name, email=email)
+        new_user = User(name=name, email=email, user_type_id=user_type_id)
         session.add(new_user)
         session.flush() 
         session.commit()
