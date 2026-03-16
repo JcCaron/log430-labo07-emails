@@ -11,36 +11,10 @@ from orders.controllers.order_controller import create_order, remove_order, get_
 from orders.controllers.user_controller import create_user, remove_user, get_user
 from stocks.controllers.product_controller import create_product, remove_product, get_product
 from stocks.controllers.stock_controller import get_stock, populate_redis_on_startup, set_stock, get_stock_overview, update_stock
+from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
  
-from opentelemetry import trace
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.instrumentation.flask import FlaskInstrumentor
-from opentelemetry.instrumentation.requests import RequestsInstrumentor
 
 app = Flask(__name__)
-
-resource = Resource.create({
-   "service.name": "store-manager",
-   "service.version": "1.0.0"
-})
-
-trace.set_tracer_provider(TracerProvider(resource=resource))
-tracer = trace.get_tracer(__name__)
-
-# Indiquez l'endpoint Jaeger (hostname dans Docker)
-otlp_exporter = OTLPSpanExporter(
-   endpoint="http://jaeger:4317",
-   insecure=True
-)
-span_processor = BatchSpanProcessor(otlp_exporter)
-trace.get_tracer_provider().add_span_processor(span_processor)
-
-# Automatic Flask instrumentation
-FlaskInstrumentor().instrument_app(app)
-RequestsInstrumentor().instrument()
 
 # Auto-populate Redis 5s after API startup (to give enough time for the DB to start up as well)
 thread = threading.Timer(10.0, populate_redis_on_startup)
@@ -52,79 +26,72 @@ def health():
     """Return OK if app is up and running"""
     return jsonify({'status':'ok'})
 
+@app.get('/metrics')
+def metrics():
+    """Expose Prometheus metrics"""
+    return generate_latest(), 200, {'Content-Type': CONTENT_TYPE_LATEST}
+
 # Write routes (Commands)
 @app.post('/orders')
 def post_orders():
     """Create a new order based on information on request body"""
-    with tracer.start_as_current_span("post_orders"):
-        return create_order(request)
+    return create_order(request)
 
 @app.delete('/orders/<int:order_id>')
 def delete_orders_id(order_id):
     """Delete an order with a given order_id"""
-    with tracer.start_as_current_span("delete_orders_id"):
-        return remove_order(order_id)
+    return remove_order(order_id)
 
 @app.post('/products')
 def post_products():
     """Create a new product based on information on request body"""
-    with tracer.start_as_current_span("post_products"):
-        return create_product(request)
+    return create_product(request)
 
 @app.delete('/products/<int:product_id>')
 def delete_products_id(product_id):
     """Delete a product with a given product_id"""
-    with tracer.start_as_current_span("delete_products_id"):
-        return remove_product(product_id)
+    return remove_product(product_id)
 
 @app.post('/users')
 def post_users():
     """Create a new user based on information on request body"""
-    with tracer.start_as_current_span("post_users"):
-        return create_user(request)
+    return create_user(request)
 
 @app.delete('/users/<int:user_id>')
 def delete_users_id(user_id):
     """Delete a user with a given user_id"""
-    with tracer.start_as_current_span("delete_users_id"):
-        return remove_user(user_id)
+    return remove_user(user_id)
 
 @app.post('/stocks')
 def post_stocks():
     """Set product stock based on information on request body"""
-    with tracer.start_as_current_span("post_stocks"):
-        return set_stock(request)
+    return set_stock(request)
 
 @app.put('/stocks')
 def put_stocks():
     """Check in/out product stock for given product_id and quantity"""
-    with tracer.start_as_current_span("put_stocks"):
-        return update_stock(request)
+    return update_stock(request)
 
 # Read routes (Queries) 
 @app.get('/orders/<int:order_id>')
 def get_order_id(order_id):
     """Get order with a given order_id"""
-    with tracer.start_as_current_span("get_order_id"):
-        return get_order(order_id)
+    return get_order(order_id)
 
 @app.get('/products/<int:product_id>')
 def get_product_id(product_id):
     """Get product with a given product_id"""
-    with tracer.start_as_current_span("get_product_id"):
-        return get_product(product_id)
+    return get_product(product_id)
 
 @app.get('/users/<int:user_id>')
 def get_user_id(user_id):
     """Get user with a given user_id"""
-    with tracer.start_as_current_span("get_user_id"):
-        return get_user(user_id)
+    return get_user(user_id)
 
 @app.get('/stocks/<int:product_id>')
 def get_stocks(product_id):
     """Get product stocks by product_id"""
-    with tracer.start_as_current_span("get_stocks"):
-        return get_stock(product_id)
+    return get_stock(product_id)
 
 @app.get('/orders/reports/highest-spenders')
 def get_orders_highest_spending_users():
