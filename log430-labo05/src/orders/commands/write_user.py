@@ -23,11 +23,17 @@ def add_user(name: str, email: str, user_type_id: int = 1):
         session.commit()
 
         user_event_producer = UserEventProducer()
-        user_event_producer.get_instance().send('user-events', value={'event': 'UserCreated', 
-                                           'id': new_user.id, 
-                                           'name': new_user.name,
-                                           'email': new_user.email,
-                                           'datetime': str(datetime.datetime.now())})
+        user_event_producer.get_instance().send(
+            'user-events',
+            value={
+                'event': 'UserCreated',
+                'id': new_user.id,
+                'name': new_user.name,
+                'email': new_user.email,
+                'user_type_id': new_user.user_type_id,
+                'datetime': str(datetime.datetime.now()),
+            },
+        )
         return new_user.id
     except Exception as e:
         session.rollback()
@@ -41,9 +47,9 @@ def delete_user(user_id: int):
     try:
         user = session.query(User).filter(User.id == user_id).first()
         if user:
-            print(f"Deleting user {user_id} with name {user.name} and email {user.email}")
             name = user.name
             email = user.email
+            user_type_id = user.user_type_id
 
             session.delete(user)
             session.commit()
@@ -56,6 +62,7 @@ def delete_user(user_id: int):
                     'id': user_id,
                     'name': name,
                     'email': email,
+                    'user_type_id': user_type_id,
                     'datetime': str(datetime.datetime.now()),
                 },
             )

@@ -29,18 +29,26 @@ class UserCreatedHandler(EventHandler):
         name = event_data.get('name')
         email = event_data.get('email')
         datetime = event_data.get('datetime')
+        user_type_id = event_data.get('user_type_id')
 
         current_file = Path(__file__)
         project_root = current_file.parent.parent   
-        with open(project_root / "templates" / "welcome_client_template.html", 'r') as file:
+        with open(project_root / "templates" / "welcome_client_template.html", 'r', encoding='utf-8') as file:
             html_content = file.read()
             html_content = html_content.replace("{{user_id}}", str(user_id))
             html_content = html_content.replace("{{name}}", name)
             html_content = html_content.replace("{{email}}", email)
             html_content = html_content.replace("{{creation_date}}", datetime)
+
+            base_message = "Merci d'avoir visité notre magazin. Si vous avez des questions ou des problèmes concernant votre achat, n'hésitez pas à nous contacter."
+            if user_type_id == 2: # Employé
+                custom_message = "Salut et bienvenue dans l'équipe ! Nous sommes ravi·e·s de te compter parmi les employé·e·s du Magasin du Coin."
+            elif user_type_id == 3: # Directeur / directrice
+                custom_message = "Bienvenue dans l'équipe de direction ! Merci de contribuer à faire grandir le Magasin du Coin."
+            html_content = html_content.replace(base_message, custom_message)
         
         filename = os.path.join(self.output_dir, f"welcome_{user_id}.html")
         with open(filename, 'w', encoding='utf-8') as f:
             f.write(html_content)
         
-        self.logger.debug(f"Courriel HTML généré à {name} (ID: {user_id}), {filename}")
+        self.logger.debug(f"Courriel HTML généré à {name} (ID: {user_id}, Type: {user_type_id}), {filename}")
