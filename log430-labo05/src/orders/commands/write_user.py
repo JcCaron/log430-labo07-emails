@@ -36,18 +36,32 @@ def add_user(name: str, email: str):
         session.close()
 
 def delete_user(user_id: int):
-    """Delete user in MySQL"""
+    """Delete user in MySQL and emit UserDeleted event"""
     session = get_sqlalchemy_session()
     try:
         user = session.query(User).filter(User.id == user_id).first()
         if user:
+            print(f"Deleting user {user_id} with name {user.name} and email {user.email}")
+            name = user.name
+            email = user.email
+
             session.delete(user)
             session.commit()
-            # TODO: envoyer un evenement UserDeleted à Kafka
-            return 1  
+
+            user_event_producer = UserEventProducer()
+            user_event_producer.get_instance().send(
+                'user-events',
+                value={
+                    'event': 'UserDeleted',
+                    'id': user_id,
+                    'name': name,
+                    'email': email,
+                    'datetime': str(datetime.datetime.now()),
+                },
+            )
+            return True
         else:
-            return 0  
-            
+            return False
     except Exception as e:
         session.rollback()
         raise e
