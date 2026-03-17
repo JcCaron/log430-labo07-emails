@@ -20,6 +20,15 @@ def main():
     registry.register(UserDeletedHandler(output_dir=config.OUTPUT_DIR))
 
     # NOTE: le consommateur peut écouter 1 ou plusieurs topics (str or array)
+    consumer_service_history = UserEventHistoryConsumer(
+        bootstrap_servers=config.KAFKA_HOST,
+        topic=config.KAFKA_TOPIC,
+        group_id=f"{config.KAFKA_GROUP_ID}-history",
+        registry=registry
+    )
+
+    consumer_service_history.start()
+
     consumer_service = UserEventConsumer(
         bootstrap_servers=config.KAFKA_HOST,
         topic=config.KAFKA_TOPIC,

@@ -5,6 +5,8 @@ Auteurs : Gabriel C. Ullmann, Fabio Petrillo, 2025
 """
 
 import json
+import os
+from pathlib import Path
 from logger import Logger
 from typing import Optional
 from kafka import KafkaConsumer
@@ -18,7 +20,7 @@ class UserEventHistoryConsumer:
         bootstrap_servers: str,
         topic: str,
         group_id: str,
-        registry: HandlerRegistry
+        registry: HandlerRegistry   
     ):
         self.bootstrap_servers = bootstrap_servers
         self.topic = topic
@@ -49,8 +51,16 @@ class UserEventHistoryConsumer:
             for message in self.consumer:
                 event_data = message.value
                 events.append(event_data)
+                
+            current_file = Path(__file__)
+            # Aller jusqu'à la racine du projet `labo07`
+            project_root = current_file.parent.parent.parent
+            filename = project_root / "output" / "user_events_history.json"
 
-            with open("user_events_history.json", "w", encoding="utf-8") as f:
+            # S'assurer que le dossier de sortie existe
+            os.makedirs(filename.parent, exist_ok=True)
+
+            with open(filename, "w", encoding="utf-8") as f:
                 json.dump(events, f, ensure_ascii=False, indent=2)
 
             self.logger.info(f"Enregistré {len(events)} événements historiques dans user_events_history.json")
